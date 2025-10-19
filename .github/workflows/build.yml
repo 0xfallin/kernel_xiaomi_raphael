@@ -1,4 +1,4 @@
-name: Build RikkaKernel for Raphael
+name: Build RikkaKernel for Redmi K20 Pro
 
 on:
   workflow_dispatch:
@@ -8,15 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup Build Environment
+      - name: Setup environment
         run: |
           sudo apt update
-          sudo apt install git wget curl build-essential bc bison flex libssl-dev libncurses5-dev libncurses-dev zip clang llvm lld -y
+          sudo apt install git wget curl build-essential bc bison flex libssl-dev libncurses5-dev zip clang llvm lld -y
 
-      - name: Download Clang Toolchain
+      - name: Download Proton Clang
         run: |
           mkdir clang
           cd clang
@@ -28,16 +28,13 @@ jobs:
           export PATH="$(pwd)/clang/bin:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
-          export KBUILD_BUILD_USER=helium
-          export KBUILD_BUILD_HOST=rikka
+          export KBUILD_BUILD_USER=HeliumStudio
+          export KBUILD_BUILD_HOST=Rikka
           make O=out ARCH=arm64 raphael_defconfig
-          make -j$(nproc) O=out ARCH=arm64 \
-            CC=clang \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          make -j$(nproc) O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
-      - name: Upload Kernel Zip
-        uses: actions/upload-artifact@v3
+      - name: Upload Kernel Build
+        uses: actions/upload-artifact@v4
         with:
           name: RikkaKernel
           path: out/arch/arm64/boot/Image.gz-dtb
