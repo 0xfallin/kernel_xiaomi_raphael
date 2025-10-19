@@ -1,23 +1,43 @@
-name: C/C++ CI
+name: Build RikkaKernel for Raphael
 
 on:
-  push:
-    branches: [ "rikka-v2" ]
-  pull_request:
-    branches: [ "rikka-v2" ]
+  workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: configure
-      run: ./configure
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Build Environment
+        run: |
+          sudo apt update
+          sudo apt install git wget curl build-essential bc bison flex libssl-dev libncurses5-dev libncurses-dev zip clang llvm lld -y
+
+      - name: Download Clang Toolchain
+        run: |
+          mkdir clang
+          cd clang
+          git clone --depth=1 https://github.com/kdrag0n/proton-clang.git .
+          cd ..
+
+      - name: Build Kernel
+        run: |
+          export PATH="$(pwd)/clang/bin:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export KBUILD_BUILD_USER=helium
+          export KBUILD_BUILD_HOST=rikka
+          make O=out ARCH=arm64 raphael_defconfig
+          make -j$(nproc) O=out ARCH=arm64 \
+            CC=clang \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+
+      - name: Upload Kernel Zip
+        uses: actions/upload-artifact@v3
+        with:
+          name: RikkaKernel
+          path: out/arch/arm64/boot/Image.gz-dtb
